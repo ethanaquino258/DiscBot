@@ -2,6 +2,7 @@ import os
 
 import discord
 import logging
+import random
 import youtube_dl
 
 from dotenv import load_dotenv
@@ -67,7 +68,17 @@ async def talk(ctx):
     source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio('assets/vocode.mp4'))
     ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
 
-    await ctx.send('Now playing: {}'.format('assets/vocode.mp4'))
+    await ctx.send('Now playing: {}'.format('David attenborough'))
+
+@bot.command(name='wap')
+async def wap(ctx):
+    wapVoices = ['ben-shapiro', 'david-attenborough', 'dubya', 'mitch-mcconnell', 'reagan', 'tucker-carlson']
+    chosenVoice = random.choice(wapVoices)
+
+    source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(f'assets/WAP/{chosenVoice}.wav'))
+    ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
+
+    await ctx.send('Now playing: {}'.format(chosenVoice))
 
 @bot.command(name='benny')
 async def benny(ctx):
