@@ -57,28 +57,35 @@ class YTDLSource(discord.PCMVolumeTransformer):
 
 @bot.command(name='join')
 async def join(ctx):
-    print("GET GIPPED M8")
     if ctx.voice_client is not None:
         return await ctx.voice_client.move_to(channel)
 
     await ctx.author.voice.channel.connect()
 
-@bot.command(name='talk')
-async def talk(ctx):
-    source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio('assets/vocode.mp4'))
+async def playAudioFile(ctx, filepath):
+    source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(filepath))
     ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
-
-    await ctx.send('Now playing: {}'.format('David attenborough'))
 
 @bot.command(name='wap')
 async def wap(ctx):
     wapVoices = ['ben-shapiro', 'david-attenborough', 'dubya', 'mitch-mcconnell', 'reagan', 'tucker-carlson']
     chosenVoice = random.choice(wapVoices)
+    audioPlaying = ctx.voice_client.is_playing()
+    voicePath = f'assets/WAP/{chosenVoice}.wav'
 
-    source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(f'assets/WAP/{chosenVoice}.wav'))
-    ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
+    print(audioPlaying)
+    if audioPlaying is True:
+        await ctx.send('Please wait for current audio to finish. Use `!stop` to stop current audio.')
+    else:
+        await playAudioFile(ctx, voicePath)
+        await ctx.send('Now playing: {}'.format(chosenVoice))
 
-    await ctx.send('Now playing: {}'.format(chosenVoice))
+@bot.command(name='stop')
+async def stop(ctx):
+    if ctx.voice_client.is_playing() is True:
+        ctx.voice_client.stop()
+    else:
+        await ctx.send('No audio being played.')
 
 @bot.command(name='benny')
 async def benny(ctx):
