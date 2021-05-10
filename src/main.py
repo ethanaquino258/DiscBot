@@ -67,13 +67,21 @@ async def playAudioFile(ctx, filepath):
     ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
 
 @bot.command(name='wap')
-async def wap(ctx):
+async def wap(ctx, arg=None):
     wapVoices = ['ben-shapiro', 'david-attenborough', 'dubya', 'mitch-mcconnell', 'reagan', 'tucker-carlson']
-    chosenVoice = random.choice(wapVoices)
-    audioPlaying = ctx.voice_client.is_playing()
-    voicePath = f'assets/WAP/{chosenVoice}.wav'
 
-    print(audioPlaying)
+    if arg is None:
+        chosenVoice = random.choice(wapVoices)
+    elif wapVoices.__contains__(arg):
+        chosenVoice = arg
+    elif arg == 'help':
+        await ctx.send('```Possible voices:\nben-shapiro\ndavid-attenborough\ndubya\nmitch-mcconnell\nreagan\ntucker-carlson```')
+    else:
+        await ctx.send('Invalid argument')
+    
+    voicePath = f'assets/WAP/{chosenVoice}.wav'
+    audioPlaying = ctx.voice_client.is_playing()
+
     if audioPlaying is True:
         await ctx.send('Please wait for current audio to finish. Use `!stop` to stop current audio.')
     else:
