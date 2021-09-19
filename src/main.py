@@ -4,6 +4,7 @@ import discord
 import logging
 import random
 import youtube_dl
+import getLatestTweet
 
 from dotenv import load_dotenv
 from discord.ext import commands
@@ -62,10 +63,10 @@ class YTDLSource(discord.PCMVolumeTransformer):
 
 @bot.command(name='join')
 async def join(ctx):
-    if ctx.voice_client is not None:
-        return await ctx.voice_client.move_to(channel)
-
-    await ctx.author.voice.channel.connect()
+    try:
+        await ctx.author.voice.channel.connect()
+    except:
+        await ctx.send(f'{ctx.author.nick} is not in a channel')
 
 
 async def playAudioFile(ctx, filepath):
@@ -89,9 +90,8 @@ async def wap(ctx, arg=None):
         await ctx.send('Invalid argument')
 
     voicePath = f'assets/WAP/{chosenVoice}.wav'
-    audioPlaying = ctx.voice_client.is_playing()
 
-    if audioPlaying is True:
+    if ctx.voice_client.is_playing() is True:
         await ctx.send('Please wait for current audio to finish. Use `!stop` to stop current audio.')
     else:
         await playAudioFile(ctx, voicePath)
@@ -102,10 +102,10 @@ async def wap(ctx, arg=None):
 async def play(ctx, arg=None):
 
     if arg == '-h':
-        await ctx.send('Searches Youtube for videos relating to argument and chooses first one. \nWrap argument in quotes for multi-word args\nEx: !play "wet ass pussy"')
+        await ctx.send('```Searches Youtube for videos relating to argument and chooses first one. \nWrap argument in quotes for multi-word args\nEx: !play "wet ass pussy"```')
 
     elif arg is None:
-        await ctx.send('Please specify something to play. Use argument `play -h` for details')
+        await ctx.send('```Please specify something to play. Use argument `play -h` for details```')
 
     elif len(arg) > 0:
         key = os.getenv('YOUTUBE_KEY')
@@ -117,13 +117,17 @@ async def play(ctx, arg=None):
             videos['items'][0]['id']['videoId']
         youtube.close()
 
-        async with ctx.typing():
-            player = await YTDLSource.from_url(videoUrl, loop=bot.loop, stream=True)
-            ctx.voice_client.play(player, after=lambda e: print(
-                'Player error: %s' % e) if e else None)
+        if ctx.voice_client.is_playing() is True:
+            await ctx.send('```Please wait for current audio to finish. Use `!stop` to stop current audio.```')
+        else:
 
-        await ctx.send('Now playing: {}'.format(player.title))
-        await ctx.send(videoUrl)
+            async with ctx.typing():
+                player = await YTDLSource.from_url(videoUrl, loop=bot.loop, stream=True)
+                ctx.voice_client.play(player, after=lambda e: print(
+                    'Player error: %s' % e) if e else None)
+
+            await ctx.send('Now playing: {}'.format(player.title))
+            await ctx.send(videoUrl)
 
 
 @bot.command(name='stop')
@@ -144,8 +148,26 @@ async def benny(ctx):
     await ctx.send('Now playing: {}'.format(player.title))
 
 
+@bot.command(name='philosophers')
+async def philosophers(ctx, arg=None):
+    if arg == '-h':
+        await ctx.send("```Get the latest tweet for a specific twitter handle.\nex. !philosophers RealCandaceO will return Candace Owens's latest tweet.```")
+    elif arg is None:
+        arg = 'benshapiro'
+    elif len(arg) > 0:
+        try:
+            url = getLatestTweet.main(arg)
+            await ctx.send("https://twitter.com/{}/status/{}".format(arg, url))
+        except:
+            await ctx.send("```Invalid Twitter user. Please use arg 'philosophers -h' for details```")
+
+
 @bot.command(name='leave')
 async def leave(ctx):
+    if ctx.voice_client.is_playing() is True:
+        ctx.voice_client.stop()
+    await playAudioFile(ctx, 'assets/quips/facts.wav')
+    await ctx.send('**Facts don\'t care about your feelings**')
     await ctx.voice_client.disconnect()
 
 bot.run(TOKEN)
