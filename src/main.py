@@ -5,7 +5,7 @@ import logging
 import random
 import youtube_dl
 import getLatestTweet
-
+from time import sleep
 from dotenv import load_dotenv
 from discord.ext import commands
 from googleapiclient.discovery import build
@@ -61,6 +61,12 @@ class YTDLSource(discord.PCMVolumeTransformer):
         return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
 
 
+def youtubeLogin():
+    key = os.getenv('YOUTUBE_KEY')
+
+    return build('youtube', 'v3', developerKey=key)
+
+
 @bot.command(name='join')
 async def join(ctx):
     try:
@@ -108,9 +114,8 @@ async def play(ctx, arg=None):
         await ctx.send('```Please specify something to play. Use argument `play -h` for details```')
 
     elif len(arg) > 0:
-        key = os.getenv('YOUTUBE_KEY')
 
-        youtube = build('youtube', 'v3', developerKey=key)
+        youtube = youtubeLogin()
 
         videos = youtube.search().list(part='snippet', q=arg).execute()
         videoUrl = 'https://www.youtube.com/watch?v=' + \
@@ -166,7 +171,12 @@ async def philosophers(ctx, arg=None):
 async def leave(ctx):
     if ctx.voice_client.is_playing() is True:
         ctx.voice_client.stop()
+
     await playAudioFile(ctx, 'assets/quips/facts.wav')
+
+    while ctx.voice_client.is_playing():
+        sleep(1)
+
     await ctx.send('**Facts don\'t care about your feelings**')
     await ctx.voice_client.disconnect()
 
