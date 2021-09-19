@@ -5,6 +5,7 @@ import logging
 import random
 import youtube_dl
 import getLatestTweet
+import getSpotifyUserTopTracks
 from time import sleep
 from dotenv import load_dotenv
 from discord.ext import commands
@@ -165,6 +166,17 @@ async def philosophers(ctx, arg=None):
             await ctx.send("https://twitter.com/{}/status/{}".format(arg, url))
         except:
             await ctx.send("```Invalid Twitter user. Please use arg 'philosophers -h' for details```")
+
+
+@bot.command(name='topTracks')
+async def topTracks(ctx, arg=None):
+    print(arg)
+    if arg == '-h':
+        await ctx.send("Get your top tracks from spotify. Provide your username in the command, ex `!top-tracks My_Username")
+    elif arg is None:
+        await ctx.send('Please specify your spotify username. See `!top-tracks -h for instructions')
+    elif len(arg) > 0:
+        await getSpotifyUserTopTracks.topTracks(ctx, bot, arg)
 
 
 @bot.command(name='leave')
