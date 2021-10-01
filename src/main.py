@@ -4,8 +4,8 @@ import discord
 import logging
 import random
 import youtube_dl
-import getLatestTweet
-import getSpotifyUserTopTracks
+import twitterIntegration
+import spotifyIntegration
 from time import sleep
 from dotenv import load_dotenv
 from discord.ext import commands
@@ -66,6 +66,24 @@ def youtubeLogin():
     key = os.getenv('YOUTUBE_KEY')
 
     return build('youtube', 'v3', developerKey=key)
+
+
+@bot.command(name='help')
+async def help(ctx):
+    await ctx.send('''
+    Q bot made by Brother Sum. 
+    Use `!` before command name.
+    - `join` = join channel. **User must be in a voice channel**
+    - `leave` = leave channel.
+    - `wap` + argument(optional) = ai generated text-to-speech of ben shapiro's infamous WAP response tweet. Several voices included. **Bot must be in a voice channel to play audio**
+    - `play` + argument = searches youtube for argument and plays first result. **Bot must be in a voice channel to play audio**
+    - `benny` = plays the benny hill theme. **Bot must be in a voice channel to play audio**
+    - `stop` = stops current audio stream.
+    - `philosophers` + argument = retrieves latest tweet from the twitter handle in the argument.
+    - `topTracks` + argument = gets a Spotify user's (obtained from argument) top tracks and DM's the calling user the result. **Requires Spotify user's authorization from DM'd link**
+    - `library` + argument = gets a Spotify user's (obtained from argument) library and DM's the results to the user as csv files. Resulting files can be used by the user in the `makeGenre` command. **Requires Spotify user's authorization from DM'd link**
+    - `makeGenre` + username + genre = creates a Spotify playlist of all songs in specified genre in a user's library
+    ''')
 
 
 @bot.command(name='join')
@@ -162,7 +180,7 @@ async def philosophers(ctx, arg=None):
         arg = 'benshapiro'
     elif len(arg) > 0:
         try:
-            url = getLatestTweet.main(arg)
+            url = twitterIntegration.main(arg)
             await ctx.send("https://twitter.com/{}/status/{}".format(arg, url))
         except:
             await ctx.send("```Invalid Twitter user. Please use arg 'philosophers -h' for details```")
@@ -170,13 +188,23 @@ async def philosophers(ctx, arg=None):
 
 @bot.command(name='topTracks')
 async def topTracks(ctx, arg=None):
-    print(arg)
     if arg == '-h':
         await ctx.send("Get your top tracks from spotify. Provide your username in the command, ex `!top-tracks My_Username")
     elif arg is None:
         await ctx.send('Please specify your spotify username. See `!top-tracks -h for instructions')
     elif len(arg) > 0:
-        await getSpotifyUserTopTracks.topTracks(ctx, bot, arg)
+        await spotifyIntegration.topTracks(ctx, bot, arg)
+
+
+@bot.command(name='library')
+async def library(ctx, arg=None):
+    print(arg)
+    if arg == '-h':
+        await ctx.send("Get your entire library from spotify, with track name, artist, and genre categorized. Provide your username in the command, ex `!library My_Username")
+    elif arg is None:
+        await ctx.send('Please specify your spotify username. See `!top-tracks -h for instructions')
+    elif len(arg) > 0:
+        await spotifyIntegration.getUserLibrary(ctx, bot, arg)
 
 
 @bot.command(name='leave')
