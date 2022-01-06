@@ -133,6 +133,8 @@ async def topTracks(ctx, bot, username):
         newPlaylistID = createResults['id']
 
         client.user_playlist_add_tracks(user['id'], newPlaylistID, uriList)
+        await ctx.message.author.send(f'See playlist here:\nhttps://open.spotify.com/playlist/{newPlaylistID}')
+
         return
         # try:
         #     user = client.me()
@@ -267,3 +269,68 @@ async def getUserLibrary(ctx, bot, username):
 
     await ctx.message.author.send(file=discord.File(f'generated/libraries/{username}/{username}-library.csv'))
     await ctx.message.author.send(file=discord.File(f'generated/libraries/{username}/{username}-genres.csv'))
+
+
+async def makeGenre(ctx, bot, username):
+
+    client = await authCode(ctx, username, "playlist-modify-public")
+
+    try:
+        songs = pd.read_csv(
+            f'generated/libraries/{username}/{username}-library.csv')
+        df = pd.DataFrame(data=songs)
+    except FileNotFoundError:
+        await ctx.message.author.send('Looks like this bot doesn\'t have your library file saved. Would you like to generate it? **Type yes or no**\nYou can also do this via the `!library` command \n**Note** this can take a while depending on your library size.')
+        generateOption = await bot.wait_for('message', check=check)
+
+        if generateOption == "Yes" or "yes":
+            await getUserLibrary(ctx, bot, username)
+        elif generateOption == "No" or "no":
+            return
+        else:
+            await ctx.message.author.send('please type `yes` or `no` only')
+
+    await ctx.message.author.send('Please enter the genre you\'d like to make a playlist for. For multiple genres in different playlists, separate each using *.\n\n(See (your_spotify_username)-genre.csv for list)')
+    desiredGenre = await bot.wait_for('message', check=check)
+
+    genres = desiredGenre.content.split('*')
+
+    for genre in genres:
+        await ctx.message.author.send(f'**Making {genre} playlist...**\n')
+        rslt_df = df.loc[df['genres'].str.contains(genre)]
+
+        if len(rslt_df) < 1:
+            ctx.message.author.send('genre not found!')
+            return
+
+        uriList = []
+
+        await ctx.message.author.send('**Sorting through songs in library...**')
+        for index, row in rslt_df.iterrows():
+            uriList.append(row['uri'])
+
+        user = client.me()
+        print(f'USER: {user}')
+        currentUser = client.current_user()
+        print(f'CURRENT USER: {currentUser}')
+        createResults = client.user_playlist_create(user['id'], genre)
+        newPlaylistID = createResults['id']
+
+        await ctx.message.author.send('**Adding songs to playlist...**')
+        # spotify limits amount of tracks you can add per request to 100 max; this is a 'paginator' of sorts
+        if len(uriList) > 100:
+            sections = len(uriList)//100
+
+            splitList = numpy.array_split(uriList, sections + 1)
+
+            for arry in splitList:
+                smallerList = []
+                for item in arry:
+                    smallerList.append(item)
+
+                client.user_playlist_add_tracks(
+                    user['id'], newPlaylistID, smallerList)
+        else:
+            client.user_playlist_add_tracks(user['id'], newPlaylistID, uriList)
+
+        await ctx.message.author.send(f'See {genre} playlist here:\nhttps://open.spotify.com/playlist/{newPlaylistID}')

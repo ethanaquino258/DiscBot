@@ -68,6 +68,7 @@ def youtubeLogin():
     return build('youtube', 'v3', developerKey=key)
 
 
+@bot.remove_command('help')
 @bot.command(name='help')
 async def help(ctx):
     await ctx.send('''
@@ -75,14 +76,14 @@ async def help(ctx):
     Use `!` before command name.
     - `join` = join channel. **User must be in a voice channel**
     - `leave` = leave channel.
-    - `wap` + argument(optional) = ai generated text-to-speech of ben shapiro's infamous WAP response tweet. Several voices included. **Bot must be in a voice channel to play audio**
-    - `play` + argument = searches youtube for argument and plays first result. **Bot must be in a voice channel to play audio**
+    - `wap` + `argument(optional)` = ai generated text-to-speech of ben shapiro's infamous WAP response tweet. Several voices included. **Bot must be in a voice channel to play audio**
+    - `play` + `argument` = searches youtube for argument and plays first result. **Bot must be in a voice channel to play audio**
     - `benny` = plays the benny hill theme. **Bot must be in a voice channel to play audio**
     - `stop` = stops current audio stream.
-    - `philosophers` + argument = retrieves latest tweet from the twitter handle in the argument.
-    - `topTracks` + argument = gets a Spotify user's (obtained from argument) top tracks and DM's the calling user the result. **Requires Spotify user's authorization from DM'd link**
-    - `library` + argument = gets a Spotify user's (obtained from argument) library and DM's the results to the user as csv files. Resulting files can be used by the user in the `makeGenre` command. **Requires Spotify user's authorization from DM'd link**
-    - `makeGenre` + username + genre = creates a Spotify playlist of all songs in specified genre in a user's library
+    - `philosophers` + `argument` = retrieves latest tweet from the twitter handle in the argument.
+    - `topTracks` + `argument` = gets a Spotify user's (obtained from argument) top tracks and DM's the calling user the result. **Requires Spotify user's authorization from DM'd link**
+    - `library` + `argument` = gets a Spotify user's (obtained from argument) library and DM's the results to the user as csv files. Resulting files can be used by the user in the `makeGenre` command. **Requires Spotify user's authorization from DM'd link**
+    - `makeGenre` + `username` + `genre` = creates a Spotify playlist of all songs in specified genre in a user's library
     ''')
 
 
@@ -90,8 +91,10 @@ async def help(ctx):
 async def join(ctx):
     try:
         await ctx.author.voice.channel.connect()
-    except:
-        await ctx.send(f'{ctx.author.nick} is not in a channel')
+    except discord.DiscordException as e:
+        print(e)
+    # except:
+    #     await ctx.send(f'{ctx.author.nick} is not in a channel')
 
 
 async def playAudioFile(ctx, filepath):
@@ -109,7 +112,7 @@ async def wap(ctx, arg=None):
         chosenVoice = random.choice(wapVoices)
     elif wapVoices.__contains__(arg):
         chosenVoice = arg
-    elif arg == 'help':
+    elif arg == '-h':
         await ctx.send('```Possible voices:\nben-shapiro\ndavid-attenborough\ndubya\nmitch-mcconnell\nreagan\ntucker-carlson```')
     else:
         await ctx.send('Invalid argument')
@@ -205,6 +208,16 @@ async def library(ctx, arg=None):
         await ctx.send('Please specify your spotify username. See `!top-tracks -h for instructions')
     elif len(arg) > 0:
         await spotifyIntegration.getUserLibrary(ctx, bot, arg)
+
+
+@bot.command(name='makeGenre')
+async def makeGenre(ctx, arg=None):
+    if arg == '-h':
+        await ctx.send("Make a playlist of all songs in your library for a specific genre. Provide username and genre in the command, ex `!makeGenre my_username rap`")
+    elif arg is None:
+        await ctx.send("Please provide username and genre. See `!makeGenre -h` for details")
+    elif len(arg) > 0:
+        await spotifyIntegration.makeGenre(ctx, bot, arg)
 
 
 @bot.command(name='leave')
